@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
   const getNavItems = () => {
     const baseItems = [
-      { title: 'Dashboard', url: `/${user?.role?.toLowerCase()}`, icon: Home },
+      // { title: 'Dashboard', url: `/${user?.role?.toLowerCase()}`, icon: Home },
     ];
 
     switch (user?.role) {
