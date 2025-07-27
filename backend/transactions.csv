@@ -1,0 +1,6 @@
+step,customer,age,gender,zipcodeOri,merchant,zipMerchant,category,amount,fraud
+1,C123456,25,M,12345,M001,54321,electronics,150.50,0
+2,C123457,30,F,12346,M002,54322,clothing,75.25,0
+3,C123458,35,M,12347,M003,54323,food,45.80,1
+4,C123459,28,F,12348,M004,54324,electronics,299.99,0
+5,C123460,42,M,12349,M005,54325,clothing,120.75,0 

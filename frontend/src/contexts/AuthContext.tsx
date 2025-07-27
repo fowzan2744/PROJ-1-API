@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 interface User {
   id: string;
@@ -22,100 +24,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check for existing token on app start
+  // Function to fetch user profile from backend
+  const fetchUserProfile = async () => {
     const token = localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-      }
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    try {
+      const userData = await authAPI.getProfile();
+      // The backend now returns the user object directly
+      console.log('User profile fetched successfully:', userData);
+      setUser(userData);
+    } catch (error: any) {
+      console.error('Failed to fetch user profile:', error);
+      console.error('Error response:', error.response?.data);
+      // Clear invalid token
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check for existing token and fetch user profile on app start
+    const token = localStorage.getItem('auth_token');
+    
+    if (token) {
+      console.log('Found token, fetching user profile...');
+      fetchUserProfile();
+    } else {
+      console.log('No token found, setting loading to false');
+      setIsLoading(false);
+    }
   }, []);
 
   const login = async (username: string, password: string, role?: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       
-      // Mock authentication for demo - replace with actual API endpoint
-      let response;
-      try {
-        response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, role }),
-        });
-      } catch {
-        response = { ok: false };
-      }
-
-      // If API fails, use mock authentication
-      if (!response.ok) {
-        // Determine role based on username or provided role parameter
-        let userRole: 'Admin' | 'Client' | 'User';
-        if (role) {
-          userRole = role as 'Admin' | 'Client' | 'User';
-        } else {
-          userRole = username === 'admin' ? 'Admin' : username === 'client' ? 'Client' : 'User';
-        }
-        
-        response = {
-          ok: true,
-          json: () => Promise.resolve({
-            token: 'mock_jwt_token_' + Date.now(),
-            user: {
-              id: '1',
-              username,
-              role: userRole,
-              email: `${username}@example.com`
-            }
-          })
-        };
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user_data', JSON.stringify(data.user));
-        setUser(data.user);
+      const response = await authAPI.login(username, password, role);
+      
+      if (response.token && response.user) {
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('user_data', JSON.stringify(response.user));
+        setUser(response.user);
 
         // Redirect based on role
-        switch (data.user.role) {
+        switch (response.user.role) {
           case 'Admin':
-            navigate('/admin');
+            navigate('/dashboard/admin');
             break;
           case 'Client':
-            navigate('/client');
+            navigate('/dashboard/client');
             break;
           case 'User':
-            navigate('/user');
+            navigate('/dashboard/user');
             break;
           default:
-            navigate('/');
+            navigate('/dashboard');
         }
         
+        toast.success('Login successful!');
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      toast.error(errorMessage);
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    setUser(null);
-    navigate('/login');
+  const logout = async () => {
+    try {
+      // Call backend logout endpoint if needed
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      setUser(null);
+      navigate('/login');
+      toast.success('Logged out successfully');
+    }
   };
 
   return (

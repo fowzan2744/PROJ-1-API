@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { authAPI } from '../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, TrendingUp, Eye, EyeOff, Mail, User, Lock, Shield } from 'lucide-react';
-
-// Mock API endpoints - replace with actual endpoints
-const AUTH_ENDPOINTS = {
-  RESEND_OTP: '/api/auth/resend-otp',
-  VERIFY_OTP: '/api/auth/verify-otp',
-  REGISTER: '/api/auth/register'
-};
 
 const Register: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -64,18 +57,11 @@ const Register: React.FC = () => {
 
     setLoading(true);
     try {
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate API response
-      // await axios.post(AUTH_ENDPOINTS.RESEND_OTP, {
-      //   email: formData.email
-      // });
-      
+      await authAPI.sendOTP(formData.email, formData.role);
       toast.success('OTP sent to your email!');
       setStep(2);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to send OTP';
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to send OTP';
       toast.error(message);
     } finally {
       setLoading(false);
@@ -102,54 +88,37 @@ const Register: React.FC = () => {
 
     setLoading(true);
     try {
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate successful registration
-      const mockResponse = {
-        data: {
-          user: {
-            id: '1',
-            username: formData.username,
-            role: formData.role as 'Admin' | 'Client' | 'User',
-            email: formData.email,
-            name: formData.name
-          },
-          token: 'mock_jwt_token_' + Date.now()
-        }
-      };
-
-      // await axios.post(AUTH_ENDPOINTS.VERIFY_OTP, {
-      //   email: formData.email,
-      //   name: formData.name,
-      //   username: formData.username,
-      //   password: formData.password,
-      //   role: formData.role,
-      //   otp: formData.otp
-      // });
+      const response = await authAPI.verifyOTP(
+        formData.email,
+        formData.username,
+        formData.password,
+        formData.name,
+        formData.role,
+        formData.otp
+      );
       
       // Store user data and token
-      localStorage.setItem('auth_token', mockResponse.data.token);
-      localStorage.setItem('user_data', JSON.stringify(mockResponse.data.user));
+      localStorage.setItem('auth_token', response.token);
+      localStorage.setItem('user_data', JSON.stringify(response.user));
       
       toast.success('Registration successful!');
       
-      // Redirect based on role
-      switch (mockResponse.data.user.role) {
-        case 'Admin':
-          navigate('/admin');
-          break;
-        case 'Client':
-          navigate('/client');
-          break;
-        case 'User':
-          navigate('/user');
-          break;
-        default:
-          navigate('/');
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
+             // Redirect based on role
+       switch (response.user.role) {
+         case 'Admin':
+           navigate('/dashboard/admin');
+           break;
+         case 'Client':
+           navigate('/dashboard/client');
+           break;
+         case 'User':
+           navigate('/dashboard/user');
+           break;
+         default:
+           navigate('/dashboard');
+       }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Registration failed';
       toast.error(message);
     } finally {
       setLoading(false);

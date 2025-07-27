@@ -34,23 +34,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       case 'Admin':
         return [
           ...baseItems,
-          { title: 'Analytics', url: '/admin/analytics', icon: BarChart3 },
-          { title: 'Users', url: '/admin/users', icon: Users },
-          { title: 'Transactions', url: '/admin/transactions', icon: CreditCard },
-          { title: 'Settings', url: '/admin/settings', icon: Settings },
+          // { title: 'Analytics', url: '/admin/analytics', icon: BarChart3 },
+          // { title: 'Users', url: '/admin/users', icon: Users },
+          // { title: 'Transactions', url: '/admin/transactions', icon: CreditCard },
+          // { title: 'Settings', url: '/admin/settings', icon: Settings },
         ];
       case 'Client':
         return [
           ...baseItems,
-          { title: 'Transactions', url: '/client/transactions', icon: CreditCard },
-          { title: 'Analytics', url: '/client/analytics', icon: TrendingUp },
-          { title: 'Reports', url: '/client/reports', icon: BarChart3 },
+          // { title: 'Transactions', url: '/client/transactions', icon: CreditCard },
+          // { title: 'Analytics', url: '/client/analytics', icon: TrendingUp },
+          // { title: 'Reports', url: '/client/reports', icon: BarChart3 },
         ];
       case 'User':
         return [
           ...baseItems,
-          { title: 'Transactions', url: '/user/transactions', icon: CreditCard },
-          { title: 'Budget', url: '/user/budget', icon: Wallet },
+          // { title: 'Transactions', url: '/user/transactions', icon: CreditCard },
+          // { title: 'Budget', url: '/user/budget', icon: Wallet },
         ];
       default:
         return baseItems;

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
+import LandingPage from "@/pages/LandingPage";
 import LoginForm from "@/components/LoginForm";
 import Register from "@/pages/Register";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -26,17 +27,18 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<Register />} />
             
             {/* Protected routes with layout */}
-            <Route path="/" element={
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }>
               {/* Default redirect based on role */}
-              <Route index element={<Navigate to="/admin" replace />} />
+              <Route index element={<Navigate to="/dashboard/admin" replace />} />
               
               {/* Admin routes */}
               <Route path="admin" element={

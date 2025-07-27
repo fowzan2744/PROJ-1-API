@@ -12,30 +12,58 @@ import {
   Users,
   Activity
 } from 'lucide-react';
-import { 
-  mockTransactions,
-  getTotalStats,
-  getTransactionsByStep,
-  getAmountByCategory,
-  getFraudStats,
-  Transaction
-} from '@/utils/mockData';
+import { adminAPI } from '@/services/api';
+import { Transaction } from '@/utils/mockData';
 
 const AdminDashboard: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [transactionsByStep, setTransactionsByStep] = useState<any[]>([]);
+  const [amountsByDate, setAmountsByDate] = useState<any[]>([]);
+  const [amountByCategory, setAmountByCategory] = useState<any[]>([]);
+  const [fraudStats, setFraudStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
-    const fetchData = async () => {
-      setLoading(true);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setTransactions(mockTransactions);
-      setLoading(false);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch all dashboard data in parallel
+        const [
+          statsData,
+          transactionsByStepData,
+          amountsByDateData,
+          amountByCategoryData,
+          fraudStatsData,
+          transactionsData
+        ] = await Promise.all([
+          adminAPI.getDashboardStats(),
+          adminAPI.getTransactionsByStep(),
+          adminAPI.getAmountsByDate(),
+          adminAPI.getAmountByCategory(),
+          adminAPI.getFraudStats(),
+          adminAPI.getTransactions(1, 50)
+        ]);
+
+        setStats(statsData);
+        setTransactionsByStep(transactionsByStepData);
+        setAmountsByDate(amountsByDateData);
+        setAmountByCategory(amountByCategoryData);
+        setFraudStats(fraudStatsData);
+        setTransactions(transactionsData.transactions);
+
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.response?.data?.error || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchData();
+    fetchDashboardData();
   }, []);
 
   if (loading) {
@@ -55,10 +83,23 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  const stats = getTotalStats(transactions);
-  const transactionsByStep = getTransactionsByStep(transactions);
-  const amountByCategory = getAmountByCategory(transactions);
-  const fraudStats = getFraudStats(transactions);
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
+          <p className="text-gray-600">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -66,28 +107,28 @@ const AdminDashboard: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Transactions"
-          value={stats.totalTransactions.toLocaleString()}
+          value={stats?.totalTransactions?.toLocaleString() || '0'}
           change="+12% from last month"
           changeType="positive"
           icon={<CreditCard className="h-4 w-4" />}
         />
         <StatCard
           title="Total Amount"
-          value={`$${stats.totalAmount.toLocaleString()}`}
+          value={`$${stats?.totalAmount?.toLocaleString() || '0'}`}
           change="+8% from last month"
           changeType="positive"
           icon={<DollarSign className="h-4 w-4" />}
         />
         <StatCard
           title="Fraud Detected"
-          value={stats.fraudCount}
-          change={`${stats.fraudPercentage}% fraud rate`}
+          value={stats?.fraudCount || 0}
+          change={`${stats?.fraudPercentage || 0}% fraud rate`}
           changeType="negative"
           icon={<AlertTriangle className="h-4 w-4" />}
         />
         <StatCard
           title="Active Users"
-          value="1,234"
+          value={stats?.uniqueCustomers?.toLocaleString() || '0'}
           change="+23% from last month"
           changeType="positive"
           icon={<Users className="h-4 w-4" />}
@@ -98,9 +139,9 @@ const AdminDashboard: React.FC = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <LineChart
-            title="Transactions Over Time"
+            title="Transaction Count Over Time"
             data={transactionsByStep}
-            xKey="step"
+            xKey="date"
             yKey="count"
             label="Transaction Count"
             color="hsl(217, 91%, 60%)"
@@ -114,6 +155,17 @@ const AdminDashboard: React.FC = () => {
           valueKey="value"
           colors={['hsl(142, 76%, 36%)', 'hsl(0, 84%, 60%)']}
         />
+        
+        <div className="lg:col-span-2">
+          <LineChart
+            title="Transaction Amount Over Time"
+            data={amountsByDate}
+            xKey="date"
+            yKey="amount"
+            label="Total Amount ($)"
+            color="hsl(142, 76%, 36%)"
+          />
+        </div>
         
         <div className="lg:col-span-3">
           <BarChart
@@ -137,17 +189,17 @@ const AdminDashboard: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           title="Average Transaction"
-          value={`$${Math.round(stats.totalAmount / stats.totalTransactions)}`}
+          value={`$${Math.round(stats?.avgAmount || 0)}`}
           icon={<Activity className="h-4 w-4" />}
         />
         <StatCard
           title="Largest Transaction"
-          value={`$${Math.max(...transactions.map(t => t.amount))}`}
+          value={`$${Math.round(stats?.maxAmount || 0)}`}
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <StatCard
           title="Categories"
-          value={amountByCategory.length}
+          value={amountByCategory?.length || 0}
           icon={<CreditCard className="h-4 w-4" />}
         />
       </div>
