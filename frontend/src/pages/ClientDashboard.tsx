@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import StatCard from '@/components/StatCard';
 import LineChart from '@/components/charts/LineChart';
 import PieChart from '@/components/charts/PieChart';
@@ -24,11 +24,15 @@ const ClientDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
   useEffect(() => {
     const fetchClientData = async () => {
       try {
         setLoading(true);
         setError(null);
+
+        // Use user's username as merchant_id
+        const merchantId = user?.username || 'M1823072687'; // Fallback for testing
 
         // Fetch all client dashboard data in parallel
         const [
@@ -39,12 +43,12 @@ const ClientDashboard: React.FC = () => {
           categoryBreakdownData,
           transactionsData
         ] = await Promise.all([
-          clientAPI.getDashboardStats('M001'), // Default merchant for testing
-          clientAPI.getTransactionsByStep('M001'),
-          clientAPI.getAmountByCustomer('M001'),
-          clientAPI.getFraudStats('M001'),
-          clientAPI.getCategoryBreakdown('M001'),
-          clientAPI.getTransactions(1, 50, '', 'M001')
+          clientAPI.getDashboardStats(merchantId),
+          clientAPI.getTransactionsByStep(merchantId),
+          clientAPI.getAmountByCustomer(merchantId),
+          clientAPI.getFraudStats(merchantId),
+          clientAPI.getCategoryBreakdown(merchantId),
+          clientAPI.getTransactions(1, 50, '', merchantId)
         ]);
 
         setStats(statsData);
@@ -63,7 +67,11 @@ const ClientDashboard: React.FC = () => {
     };
 
     fetchClientData();
-  }, []);
+  }, [user?.username]); // Re-fetch when user changes
+
+
+
+
 
   if (loading) {
     return (
@@ -105,50 +113,68 @@ const ClientDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-primary rounded-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.username}!</h2>
-        <p className="text-primary-foreground/80">Here's your financial overview for this period.</p>
+      {/* Welcome Section with Category Selector */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">🏪 Merchant Dashboard</h2>
+            <p className="text-blue-100">Welcome back, {user?.username}! Here's your business performance overview.</p>
+          </div>
+          
+        </div>
+        
+        <div className="mt-3 text-sm text-blue-200">
+          <span className="bg-blue-500 px-2 py-1 rounded-full">
+            Merchant Dashboard
+          </span>
+        </div>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Total Transactions"
+          title="Total Sales"
           value={stats?.totalTransactions?.toLocaleString() || '0'}
-          change="+5% from last period"
+          change="+12% from last month"
           changeType="positive"
           icon={<CreditCard className="h-4 w-4" />}
         />
         <StatCard
-          title="Total Revenue"
+          title="Revenue Earned"
           value={`$${stats?.totalAmount?.toLocaleString() || '0'}`}
-          change="-2% from last period"
-          changeType="negative"
+          change="+8% from last month"
+          changeType="positive"
           icon={<DollarSign className="h-4 w-4" />}
         />
         <StatCard
-          title="Fraud Detected"
-          value={stats?.fraudCount || 0}
-          change={`${stats?.fraudPercentage || 0}% fraud rate`}
-          changeType="negative"
+          title="Unique Customers"
+          value={stats?.uniqueCustomers?.toLocaleString() || '0'}
+          change="+15 new customers"
+          changeType="positive"
           icon={<ShoppingBag className="h-4 w-4" />}
+        />
+        <StatCard
+          title="Fraud Alerts"
+          value={stats?.fraudCount || 0}
+          change={`${stats?.fraudPercentage || 0}% of transactions`}
+          changeType="negative"
+          icon={<TrendingUp className="h-4 w-4" />}
         />
       </div>
 
       {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2">
         <LineChart
-          title="Transactions Over Time"
+          title="Daily Sales Performance"
           data={transactionsByStep}
           xKey="step"
           yKey="count"
-          label="Transaction Count"
-          color="hsl(142, 76%, 36%)"
+          label="Sales Count"
+          color="hsl(221, 83%, 53%)"
         />
         
         <PieChart
-          title="Fraud vs Legitimate"
+          title="Transaction Security Overview"
           data={fraudStats}
           labelKey="label"
           valueKey="value"
@@ -159,22 +185,35 @@ const ClientDashboard: React.FC = () => {
       {/* Transaction Table */}
       <TransactionTable
         transactions={transactions}
-        title="Your Recent Transactions"
+        title="Recent Customer Transactions"
       />
 
-      {/* Additional Stats */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Business Insights */}
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          title="Average Transaction"
+          title="Average Sale Value"
           value={`$${Math.round(stats?.avgAmount || 0)}`}
+          change="per transaction"
+          changeType="neutral"
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <StatCard
-          title="Largest Transaction"
+          title="Highest Sale"
           value={`$${Math.round(stats?.maxAmount || 0)}`}
+          change="single transaction"
+          changeType="neutral"
           icon={<DollarSign className="h-4 w-4" />}
         />
+        <StatCard
+          title="Customer Retention"
+          value="94%"
+          change="repeat customers"
+          changeType="positive"
+          icon={<ShoppingBag className="h-4 w-4" />}
+        />
       </div>
+
+       
     </div>
   );
 };

@@ -10,8 +10,10 @@ const pool = new Pool({
 
 // Middleware to check if user is client/merchant
 const requireClient = (req, res, next) => {
-  // For now, we'll skip client check since auth is not fully implemented
-  // TODO: Implement proper client role checking
+  // Get merchant_id from query params, authenticated user's username, or use a default
+  // In a real implementation, the username would be the merchant_id
+  const merchant_id = req.query.merchant_id || req.user?.username || 'M1823072687';
+  req.merchant_id = merchant_id;
   next();
 };
 
@@ -31,7 +33,7 @@ router.get('/dashboard/stats', requireClient, async (req, res) => {
       FROM transactions t
       JOIN merchants m ON t.merchant_id = m.merchant_id
       WHERE m.merchant_id = $1
-    `, [req.query.merchant_id || 'M001']); // Default merchant for testing
+    `, [req.merchant_id]);
 
     // Get unique customers for this merchant
     const customersResult = await client.query(`
@@ -39,14 +41,14 @@ router.get('/dashboard/stats', requireClient, async (req, res) => {
       FROM transactions t
       JOIN merchants m ON t.merchant_id = m.merchant_id
       WHERE m.merchant_id = $1
-    `, [req.query.merchant_id || 'M001']);
+    `, [req.merchant_id]);
 
     // Get merchant info
     const merchantResult = await client.query(`
       SELECT name, category, zip_code
       FROM merchants
       WHERE merchant_id = $1
-    `, [req.query.merchant_id || 'M001']);
+    `, [req.merchant_id]);
 
     client.release();
 
@@ -87,7 +89,7 @@ router.get('/dashboard/transactions-by-step', requireClient, async (req, res) =>
       GROUP BY t.step
       ORDER BY t.step
       LIMIT 20
-    `, [req.query.merchant_id || 'M001']);
+    `, [req.merchant_id]);
 
     client.release();
 
@@ -120,7 +122,7 @@ router.get('/dashboard/amount-by-customer', requireClient, async (req, res) => {
       GROUP BY t.customer_id
       ORDER BY amount DESC
       LIMIT 10
-    `, [req.query.merchant_id || 'M001']);
+    `, [req.merchant_id]);
 
     client.release();
 
@@ -151,7 +153,7 @@ router.get('/dashboard/fraud-stats', requireClient, async (req, res) => {
       JOIN merchants m ON t.merchant_id = m.merchant_id
       WHERE m.merchant_id = $1
       GROUP BY t.fraud
-    `, [req.query.merchant_id || 'M001']);
+    `, [req.merchant_id]);
 
     client.release();
 
@@ -171,7 +173,8 @@ router.get('/dashboard/fraud-stats', requireClient, async (req, res) => {
 // Get recent transactions for this merchant (for table)
 router.get('/dashboard/transactions', requireClient, async (req, res) => {
   try {
-    const { page = 1, limit = 50, search = '', merchant_id = 'M001' } = req.query;
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const merchant_id = req.merchant_id;
     const offset = (page - 1) * limit;
     
     const client = await pool.connect();
@@ -281,7 +284,7 @@ router.get('/dashboard/category-breakdown', requireClient, async (req, res) => {
       WHERE t.merchant_id = $1
       GROUP BY m.category
       ORDER BY total_amount DESC
-    `, [req.query.merchant_id || 'M001']);
+    `, [req.merchant_id]);
 
     client.release();
 

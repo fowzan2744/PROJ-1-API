@@ -177,35 +177,35 @@ export const CLIENT_ENDPOINTS = {
 // Client Dashboard API functions
 export const clientAPI = {
   // Get dashboard overview statistics for merchant
-  getDashboardStats: async (merchantId = 'M001') => {
+  getDashboardStats: async (merchantId) => {
     const params = new URLSearchParams({ merchant_id: merchantId });
     const response = await api.get(`${CLIENT_ENDPOINTS.DASHBOARD_STATS}?${params}`);
     return response.data;
   },
 
   // Get transactions by step for line chart
-  getTransactionsByStep: async (merchantId = 'M001') => {
+  getTransactionsByStep: async (merchantId) => {
     const params = new URLSearchParams({ merchant_id: merchantId });
     const response = await api.get(`${CLIENT_ENDPOINTS.TRANSACTIONS_BY_STEP}?${params}`);
     return response.data;
   },
 
   // Get amount by customer for bar chart
-  getAmountByCustomer: async (merchantId = 'M001') => {
+  getAmountByCustomer: async (merchantId) => {
     const params = new URLSearchParams({ merchant_id: merchantId });
     const response = await api.get(`${CLIENT_ENDPOINTS.AMOUNT_BY_CUSTOMER}?${params}`);
     return response.data;
   },
 
   // Get fraud statistics for pie chart
-  getFraudStats: async (merchantId = 'M001') => {
+  getFraudStats: async (merchantId) => {
     const params = new URLSearchParams({ merchant_id: merchantId });
     const response = await api.get(`${CLIENT_ENDPOINTS.FRAUD_STATS}?${params}`);
     return response.data;
   },
 
   // Get transactions with pagination and search
-  getTransactions: async (page = 1, limit = 50, search = '', merchantId = 'M001') => {
+  getTransactions: async (page = 1, limit = 50, search = '', merchantId) => {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -217,9 +217,61 @@ export const clientAPI = {
   },
 
   // Get category breakdown
-  getCategoryBreakdown: async (merchantId = 'M001') => {
+  getCategoryBreakdown: async (merchantId) => {
     const params = new URLSearchParams({ merchant_id: merchantId });
     const response = await api.get(`${CLIENT_ENDPOINTS.CATEGORY_BREAKDOWN}?${params}`);
+    return response.data;
+  },
+};
+
+// User Dashboard API endpoints
+export const USER_ENDPOINTS = {
+  DASHBOARD_STATS: '/user/dashboard/stats',
+  SPENDING_TIMELINE: '/user/dashboard/spending-timeline',
+  MERCHANT_PREFERENCES: '/user/dashboard/merchant-preferences',
+  FRAUD_ALERTS: '/user/dashboard/fraud-alerts',
+  TRANSACTIONS: '/user/dashboard/transactions',
+};
+
+// User Dashboard API functions
+export const userAPI = {
+  // Get dashboard overview statistics for user
+  getDashboardStats: async (customerId) => {
+    const params = new URLSearchParams({ customer_id: customerId });
+    const response = await api.get(`${USER_ENDPOINTS.DASHBOARD_STATS}?${params}`);
+    return response.data;
+  },
+
+  // Get spending timeline for line chart
+  getSpendingTimeline: async (customerId) => {
+    const params = new URLSearchParams({ customer_id: customerId });
+    const response = await api.get(`${USER_ENDPOINTS.SPENDING_TIMELINE}?${params}`);
+    return response.data;
+  },
+
+  // Get merchant preferences for bar chart
+  getMerchantPreferences: async (customerId) => {
+    const params = new URLSearchParams({ customer_id: customerId });
+    const response = await api.get(`${USER_ENDPOINTS.MERCHANT_PREFERENCES}?${params}`);
+    return response.data;
+  },
+
+  // Get fraud alerts
+  getFraudAlerts: async (customerId) => {
+    const params = new URLSearchParams({ customer_id: customerId });
+    const response = await api.get(`${USER_ENDPOINTS.FRAUD_ALERTS}?${params}`);
+    return response.data;
+  },
+
+  // Get transactions with pagination and search
+  getTransactions: async (page = 1, limit = 20, search = '', customerId) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      search: search,
+      customer_id: customerId
+    });
+    const response = await api.get(`${USER_ENDPOINTS.TRANSACTIONS}?${params}`);
     return response.data;
   },
 };
