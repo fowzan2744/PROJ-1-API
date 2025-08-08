@@ -18,7 +18,7 @@ const requireClient = (req, res, next) => {
 };
 
 // Get client dashboard overview statistics (for specific merchant)
-router.get('/dashboard/stats', requireClient, async (req, res) => {
+router.get('/dashboard/stats', requireClient,async (req, res) => {
   try {
     const client = await pool.connect();
     
